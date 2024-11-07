@@ -1,0 +1,8 @@
+exportPattern("^[[:alpha:]]+")
+## Export regular function names (no dots)
+export(phylolm.hp)
+export(phyloglm.hp)
+import(rr2)
+import(phylolm)
+importFrom("stats", "as.formula", "formula", "glm", "lm")
+importFrom("utils", "citation")

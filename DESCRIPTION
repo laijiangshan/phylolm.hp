@@ -1,0 +1,14 @@
+Package: phylolm.hp
+Type: Package
+Title: Hierarchical Partitioning of R2 for Phylogenetic Linear Regression
+Version: 0.0-1
+Date: 2024-11-05
+Depends: R (>= 3.4.0),rr2,phylolm
+Authors@R: c(person("Jiangshan", "Lai", , "lai@njfu.edu.cn", role = c("aut", "cre"),
+           comment = c(ORCID = "0000-0002-0279-8816")),person("Gang", "Wang", role="aut"))
+Maintainer: Jiangshan Lai <lai@njfu.edu.cn>
+Description: Conducts hierarchical partitioning to calculate individual contributions of phylogenetic signal and  predictors towards total R2  for Phylogenetic Linear Regression models based on output of phylolm()and phyloglm()in 'phylolm' package, applying the algorithm in this paper: Lai(2023) <doi:10.1093/jpe/rtad038>.
+License: GPL
+Encoding: UTF-8
+URL: https://github.com/laijiangshan/phylolm.hp
+RoxygenNote: 7.3.1
