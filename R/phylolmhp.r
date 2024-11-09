@@ -1,10 +1,12 @@
 #' Hierarchical Partitioning of R2 for Phylogenetic Linear Regression
 
 #' @param  mod  Fitted phylolm model objects.
+#' @param  commonality Logical; If TRUE, the result of commonality analysis is shown, the default is FALSE. 
 
 #' @details This function conducts hierarchical partitioning to calculate the individual contributions of phylogenetic signal and each predictor towards total R2 from rr2 package for phylogenetic linear regression. 
 
 #' @return \item{Total.R2}{The R2 for the full model.}
+#' @return \item{commonality.analysis}{If commonality=TRUE, a matrix containing the value and percentage of all commonality (2^N-1 for N predictors or matrices).}
 #' @return \item{Individual.R2}{A vector containing individual R2 for each predictor and phylogenetic tree.}
 
 #' @author {Jiangshan Lai} \email{lai@njfu.edu.cn}
@@ -38,10 +40,10 @@
 #' parameters=list(ancestral.state=0, sigma2=5, lambda=0.9))            
 #'dat <- data.frame(trait=y[taxa], pred=x[taxa], pred2=x2[taxa])
 #'fit <- phylolm(trait ~ pred + pred2, data=dat, phy=tre, model="lambda")
-#'phylolm.hp(fit)
+#'phylolm.hp(fit,commonality=TRUE)
 
 
-phylolm.hp <- function(mod) 
+phylolm.hp <- function(mod,commonality=FALSE) 
 {
   # initial checks
   if (!inherits(mod, "phylolm")) stop("phylolm.hp only supports phylolm objects at the moment")
@@ -56,13 +58,12 @@ phylolm.hp <- function(mod)
   if(!is.null(attr(mod$terms, "offset")))
   {ivname <- strsplit(as.character(mod$formula)[3],"[/+]")[[1]][-(attr(mod$terms, "offset")+1)]} 
   if(is.null(attr(mod$terms, "offset")))
-  {ivname <- strsplit(as.character(mod$formula)[3],"[/+]")[[1]]} 
+  {ivname <- strsplit(gsub(" ", "", as.character(mod$formula)[3]), "[/+]")[[1]]} 
   
   
-  iv.name <- ivname
+  iv.name <- c("phytree",ivname)
   nvar <- length(iv.name)
-if(nvar>1)
-{
+
  #  stop("Analysis not conducted. Insufficient number of predictors.")
 
   totalN <- 2^nvar - 1
@@ -76,42 +77,44 @@ if(nvar>1)
 outr2  <- rr2::R2_lik(mod)
 
 
-r2type  <-  row.names(outr2)
-nr2type   <-  length(r2type)
-if(nr2type==0)
-{nr2type <- 1
+#r2type  <-  row.names(outr2)
+#nr2type   <-  length(r2type)
+#if(nr2type==0)
+#{nr2type <- 1
 #if(commonality)
 #{r2type <- 'commonality.analysis'}
 #else
 #{r2type <- 'hierarchical.partitioning'}
-}
+#}
 
-
-if(inherits(mod, "phylolm"))
-{dat <- eval(mod$call$data)
- #phy0 <- eval(mod$call$phy)
+dat <- eval(mod$call$data)
+phy0 <- eval(mod$call$phy)
 
 if(!inherits(dat, "data.frame")){stop("Please change the name of data object in the original phylolm analysis then try again.")}
 #if('phylolm' %in% class(mod)) to_del <- paste(str_split(as.character(mod$call$formula)[2],'~')[[1]][1],"~","1") else to_del <- paste(as.character(mod$call$formula)[2],"~","1")
-to_del <- paste(paste("-", iv.name, sep= ""), collapse = " ")
+to_del <- paste(paste("-", ivname, sep= ""), collapse = " ")
   # reduced formula
   modnull<- stats::update(stats::formula(mod), paste(". ~ . ", to_del, sep=""))
-  mod_null <-  lm(modnull,data = dat)
+ 
+ mod_null.1 <-  stats::update(object = mod, formula. = modnull, data = dat)
+ mod_null.2 <-  lm(modnull,data = dat)
 
 #if('phylolm' %in% class(mod)) to_del <- paste(as.character(mod$formula)[2],"~","1") else to_del <- paste(as.character(mod$call$formula)[2],"~","1")
- }
+
 
 
 outputList  <- list()
 outputList[[1]] <- outr2
-for (k in 1:nr2type)
-{
-  commonM <- matrix(nrow = totalN, ncol = 3)
-  for (i in 1:totalN) {
+
+commonM <- matrix(nrow = totalN, ncol = 3)
+commonM[1, 2]  <- rr2::R2_lik(mod_null.1)  
+  for (i in 2:totalN) 
+  {
     tmp.name <- iv.name[as.logical(binarymx[, i])]
-	
+   if(!'phytree' %in% tmp.name)
+	{	
 	to_add <- paste("~", paste(c(tmp.name, if (!is.null(mod$offset)) as.character(attr(mod$terms, "variables")[attr(mod$terms, "offset") + 1])), collapse = " + "))
-      modnew <- stats::update(object = mod_null, data = dat, formula = as.formula(to_add))
+      modnew <- stats::update(object = mod_null.2, data = dat, formula = as.formula(to_add))
 
    #to_add <- paste("~",paste(tmp.name,collapse = " + "),sep=" ")
    # modnew  <- stats::update(object = mod_null, data = dat,to_add) 
@@ -119,6 +122,22 @@ for (k in 1:nr2type)
 	#if(type=="adjR2")commonM[i, 2]  <- summary(modnew)$r.sq
 	commonM[i, 2]  <- rr2::R2_lik(modnew)
   }
+ 
+  if('phytree' %in% tmp.name)
+	{
+	tmp.name <- tmp.name[-1]
+	to_add <- paste("~", paste(c(tmp.name, if (!is.null(mod$offset)) as.character(attr(mod$terms, "variables")[attr(mod$terms, "offset") + 1])), collapse = " + "))
+    modnew <- stats::update(object = mod_null.1, data = dat, formula = as.formula(to_add))
+
+   #to_add <- paste("~",paste(tmp.name,collapse = " + "),sep=" ")
+   # modnew  <- stats::update(object = mod_null, data = dat,to_add) 
+    #if(type=="dev")commonM[i, 2]  <- summary(modnew)$dev.expl
+	#if(type=="adjR2")commonM[i, 2]  <- summary(modnew)$r.sq
+	commonM[i, 2]  <- rr2::R2_lik(modnew)
+  }
+ 
+}
+
 
   commonlist <- vector("list", totalN)
 
@@ -236,55 +255,19 @@ for (k in 1:nr2type)
  #dimnames(VariableImportance) <- list(iv.name, c("Individual","I.perc(%)"))
  dimnames(VariableImportance) <- list(iv.name, c("Unique","Average.share","Individual","I.perc(%)"))
   
-#if(commonality)
-#{outputList[[k+1]]<-outputcommonM}
-
-#else
-#{outputList[[k+1]]<-VariableImportance}
-
-outputList[[k+1]]<- c(VariableImportance[,"Individual"],phytree=outr2-sum(VariableImportance[,"Individual"]))
-
-}
+if(commonality)
+{outputList[[2]]<-outputcommonM
+outputList[[3]]<-VariableImportance
+names(outputList) <- c("Total.R2","commonality.analysis","Individual.R2")
 }
 
-if(nvar==1)
-{
-outr2  <- rr2::R2_lik(mod)
-
-
-r2type  <-  row.names(outr2)
-nr2type   <-  length(r2type)
-if(nr2type==0)
-{nr2type <- 1
-#if(commonality)
-#{r2type <- 'commonality.analysis'}
-#else
-#{r2type <- 'hierarchical.partitioning'}
+else
+{outputList[[2]]<-VariableImportance
+names(outputList) <- c("Total.R2","Individual.R2")
 }
 
-
-if(inherits(mod, "phylolm"))
-{dat <- eval(mod$call$data)
- #phy0 <- eval(mod$call$phy)
-
-if(!inherits(dat, "data.frame")){stop("Please change the name of data object in the original phylolm analysis then try again.")}
-#if('phylolm' %in% class(mod)) to_del <- paste(as.character(mod$formula)[2],"~","1") else to_del <- paste(as.character(mod$call$formula)[2],"~","1")
- }
-
-
-outputList  <- list()
-outputList[[1]] <- outr2
-
-for (k in 1:nr2type)
-{
-dat <- eval(mod$call$data)
-Individual <- rr2::R2_lik(lm(formula(mod),data = dat))
-
-outputList[[k+1]]<- c(Individual,phytree=outr2-Individual)
-names(outputList[[k+1]])<-c(iv.name,"phytree")
-}
-
-}
+#outputList[[k+1]]<- c(VariableImportance[,"Individual"],phytree=outr2-sum(VariableImportance[,"Individual"]))
+#outputList[[2]]<-VariableImportance
 
 #if(type=="adjR2"){names(outputList) <- c("adjusted.R2",r2type)}
 #if(type=="dev"){names(outputList) <- c("Explained.deviance",r2type)}
@@ -292,10 +275,11 @@ names(outputList[[k+1]])<-c(iv.name,"phytree")
 #outputList$variables <- iv.name
 #if(commonality){outputList$type="commonality.analysis"}
 #if(!commonality){outputList$type="hierarchical.partitioning"}
-names(outputList) <- c("Total.R2","Individual.R2")
+
 class(outputList) <- "phyloglmhp" # Class definition
 outputList
 }
+
 
 
 

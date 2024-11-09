@@ -4,13 +4,17 @@
 \alias{phylolm.hp}
 \title{Hierarchical Partitioning of R2 for Phylogenetic Linear Regression}
 \usage{
-phylolm.hp(mod)
+phylolm.hp(mod, commonality = FALSE)
 }
 \arguments{
 \item{mod}{Fitted phylolm model objects.}
+
+\item{commonality}{Logical; If TRUE, the result of commonality analysis is shown, the default is FALSE.}
 }
 \value{
 \item{Total.R2}{The R2 for the full model.}
+
+\item{commonality.analysis}{If commonality=TRUE, a matrix containing the value and percentage of all commonality (2^N-1 for N predictors or matrices).}
 
 \item{Individual.R2}{A vector containing individual R2 for each predictor and phylogenetic tree.}
 }
@@ -36,7 +40,7 @@ y <- b0 + b1 * x + b2 * x2 + rTrait(n=1, phy=tre, model="lambda",
 parameters=list(ancestral.state=0, sigma2=5, lambda=0.9))            
 dat <- data.frame(trait=y[taxa], pred=x[taxa], pred2=x2[taxa])
 fit <- phylolm(trait ~ pred + pred2, data=dat, phy=tre, model="lambda")
-phylolm.hp(fit)
+phylolm.hp(fit,commonality=TRUE)
 }
 \references{
 \itemize{
