@@ -4,10 +4,12 @@
 \alias{phylolm.hp}
 \title{Hierarchical Partitioning of R2 for Phylogenetic Linear Regression}
 \usage{
-phylolm.hp(mod, commonality = FALSE)
+phylolm.hp(mod, iv = NULL, commonality = FALSE)
 }
 \arguments{
-\item{mod}{Fitted phylolm model objects.}
+\item{mod}{Fitted phylolm or phyloglm model objects.}
+
+\item{iv}{optional the relative importance of predicotr groups will be evaluated. The input for iv should be a list containing the names of each group of variables. The variable names must be the names of the predictor variables in mod.}
 
 \item{commonality}{Logical; If TRUE, the result of commonality analysis is shown, the default is FALSE.}
 }
@@ -16,7 +18,7 @@ phylolm.hp(mod, commonality = FALSE)
 
 \item{commonality.analysis}{If commonality=TRUE, a matrix containing the value and percentage of all commonality (2^N-1 for N predictors or matrices).}
 
-\item{Individual.R2}{A vector containing individual R2 for each predictor and phylogenetic tree.}
+\item{Individual.R2}{A matrix containing individual effects and percentage of individual effects for phylogenetic tree and each predictor}
 }
 \description{
 Hierarchical Partitioning of R2 for Phylogenetic Linear Regression
@@ -33,14 +35,31 @@ taxa <- sort(tre$tip.label)
 b0 <- 0      
 b1 <- 0.3    
 b2 <- 0.5 
+b3 <- 0.4
 x <- rTrait(n=1, phy=tre, model="lambda", parameters=list(ancestral.state=0, sigma2=15, lambda=0.9))          
 x2 <- rTrait(n=1, phy=tre, model="lambda",  
-parameters=list(ancestral.state=0, sigma2=10, lambda=0.9))          
-y <- b0 + b1 * x + b2 * x2 + rTrait(n=1, phy=tre, model="lambda",
+parameters=list(ancestral.state=0, sigma2=10, lambda=0.9))  
+x3 <- rTrait(n=1, phy=tre, model="lambda",  
+parameters=list(ancestral.state=0, sigma2=13, lambda=0.9)) 
+y <- b0 + b1 * x + b2 * x2 + b3*x3+ rTrait(n=1, phy=tre, model="lambda",
 parameters=list(ancestral.state=0, sigma2=5, lambda=0.9))            
-dat <- data.frame(trait=y[taxa], pred=x[taxa], pred2=x2[taxa])
-fit <- phylolm(trait ~ pred + pred2, data=dat, phy=tre, model="lambda")
+dat <- data.frame(trait=y[taxa], pred=x[taxa], pred2=x2[taxa],pred3=x3[taxa])
+fit <- phylolm(trait ~ pred + pred2 + pred3, data=dat, phy=tre, model="lambda")
 phylolm.hp(fit,commonality=TRUE)
+iv=list(env1="pred",env2=c("pred2","pred3"))
+phylolm.hp(fit,iv)
+set.seed(123456)
+tre <- rtree(50)
+x1 <- rTrait(n=1, phy=tre)  
+x2 <- rTrait(n=1, phy=tre)
+x3 <- rTrait(n=1, phy=tre)
+X <- cbind(rep(1, 50), x1, x2, x3)
+y <- rbinTrait(n=1, phy=tre, beta=c(-1, 0.9, 0.9, 0.5), alpha=1, X=X)
+dat <- data.frame(trait01=y, predictor1=x1, predictor2=x2, predictor3=x3)
+fit <- phyloglm(trait01 ~ predictor1 + predictor2 + predictor3, phy=tre, data=dat)
+phylolm.hp(fit)
+iv=list(env1="predictor1",env2=c("predictor2","predictor3"))
+phylolm.hp(fit,iv)
 }
 \references{
 \itemize{

@@ -1,8 +1,8 @@
 Package: phylolm.hp
 Type: Package
 Title: Hierarchical Partitioning of R2 for Phylogenetic Linear Regression
-Version: 0.0-2
-Date: 2024-11-18
+Version: 0.0-3
+Date: 2024-11-30
 Depends: R (>= 3.4.0),rr2,phylolm,ggplot2,vegan
 Authors@R: c(person("Jiangshan", "Lai", , "lai@njfu.edu.cn", role = c("aut", "cre"),
            comment = c(ORCID = "0000-0002-0279-8816")),person("Gang", "Wang", role="aut"))
