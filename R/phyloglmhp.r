@@ -1,7 +1,7 @@
 #' Hierarchical Partitioning of R2 for Phylogenetic Generalized Linear Regression
 
 #' @param  mod  Fitted phylolm or phyloglm model objects.
-#' @param  iv  optional the relative importance of predicotr groups will be evaluated. The input for iv should be a list containing the names of each group of variables. The variable names must be the names of the predictor variables in mod.
+#' @param  iv  optional The relative importance of predictor groups will be assessed. The input for iv should be a list, where each element contains the names of variables belonging to a specific group. These variable names must correspond to the predictor variables defined in the model (mod).
 
 #' @param  commonality Logical; If TRUE, the result of commonality analysis is shown, the default is FALSE. 
 
@@ -209,7 +209,7 @@ to_del <- paste(paste("-", ivname, sep= ""), collapse = " ")
  {mod_null.2 <-  glm(modnull,data = dat,family="poisson")}
  }
  
- outputList  <- list()
+outputList  <- list()
 outputList[[1]] <- outr2
 
 commonM[1, 2]  <- rr2::R2_lik(mod_null.1)  
